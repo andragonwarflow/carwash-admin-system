@@ -1,0 +1,95 @@
+
+{% extends "base.html" %}
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <h4>Bahías de Lavado</h4>
+        <div class="row row-cols-1 row-cols-md-3 g-4 mb-5">
+            {% for bay in bays %}
+            <div class="col">
+                <div class="card h-100 text-center p-3 {{ 'bay-available' if bay.status == 'Available' else 'bay-occupied' }}">
+                    <div class="card-body">
+                        <h5 class="card-title">Bahía {{ bay.number }}</h5>
+                        <p class="card-text">{{ bay.status }}</p>
+                        {% if bay.status == 'Occupied' %}
+                        <button class="btn btn-sm btn-dark" onclick="finalizeSale({{ bay.id }})">Finalizar</button>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    <div class="col-md-4">
+        <h4>Cola de Espera</h4>
+        <ul class="list-group mb-4">
+            {% for item in queue %}
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+                Cliente #{{ item.customer_id }} - Servicio #{{ item.service_id }}
+                <span class="badge bg-primary rounded-pill">{{ item.status }}</span>
+            </li>
+            {% endfor %}
+        </ul>
+        <button class="btn btn-success w-100 mb-3" onclick="processNext()">Procesar Siguiente</button>
+        <button class="btn btn-outline-primary w-100" data-bs-toggle="modal" data-bs-target="#addQueueModal">Añadir a Cola</button>
+    </div>
+</div>
+
+<!-- Modal Add Queue -->
+<div class="modal fade" id="addQueueModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Añadir Vehículo</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="queueForm">
+                    <div class="mb-3">
+                        <label class="form-label">Cliente ID</label>
+                        <input type="number" id="customer_id" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Servicio ID</label>
+                        <input type="number" id="service_id" class="form-control" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">Agregar</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+async function processNext() {
+    const res = await fetch('/api/queue/process', { method: 'POST', headers: {'Content-Type': 'application/json'} });
+    if (res.ok) location.reload();
+}
+
+async function finalizeSale(bayId) {
+    // In a real app, we'd get the current sale and queue item IDs
+    // For this MVP, we'll use placeholders or a simplified flow
+    const data = { sale_id: 1, queue_id: 1, bay_id: bayId };
+    const res = await fetch('/api/sale/finalize', { 
+        method: 'POST', 
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(data)
+    });
+    if (res.ok) location.reload();
+}
+
+document.getElementById('queueForm').onsubmit = async (e) => {
+    e.preventDefault();
+    const data = {
+        customer_id: document.getElementById('customer_id').value,
+        service_id: document.getElementById('service_id').value
+    };
+    const res = await fetch('/api/queue/add', { 
+        method: 'POST', 
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(data)
+    });
+    if (res.ok) location.reload();
+};
+</script>
+{% endblock %}
